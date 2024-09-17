@@ -19,7 +19,7 @@ import java.util.*;
 public class CodeDocxGenerator {
 
     private String PROJECT_PATH = "";// 项目路径
-    private String DOC_SAVE_PATH ="";// 生成的源代码Word文档的保存路径
+    private String DOC_SAVE_PATH = "";// 生成的源代码Word文档的保存路径
     private String HEADER = "";// 软件名称+版本号
     private List<String> FILE_TYPES;// 需要查找的文件类型
     private int totalLines = 0;// 代码总行数
@@ -35,16 +35,18 @@ public class CodeDocxGenerator {
 //        cdg.start(args,null);
 //    }
 
-    public CodeDocxGenerator(){}
+    public CodeDocxGenerator() {
+    }
 
     /**
      * 开始
+     *
      * @param args
      */
-    public void start(String[] args, List<String> ignoreDirs){
+    public void start(String[] args, List<String> ignoreDirs) {
         LogUtils.println("开始");
         // 四个参数处理：项目源代码目录、软件名称、版本号、源码文件类型
-        if(args == null || args.length < 5){
+        if (args == null || args.length < 5) {
             LogUtils.println("参数错误，请输入参数：源代码项目目录、软件名称、版本号、是否分为前后各30页（true/false）、源代码文件类型（以.开始，支持多个，以空格区分）。参数间以空格区分。");
             System.exit(0);
         }
@@ -53,8 +55,8 @@ public class CodeDocxGenerator {
         IS_HALF = Boolean.parseBoolean(args[3]);
         FILE_TYPES = new ArrayList<>();
         // 遍历获取选择的源码文件类型
-        for(int i = 4;i < args.length;i++){
-            if(args[i] != null && !args[i].isEmpty()){
+        for (int i = 4; i < args.length; i++) {
+            if (args[i] != null && !args[i].isEmpty()) {
                 FILE_TYPES.add(args[i]);
             }
         }
@@ -64,11 +66,11 @@ public class CodeDocxGenerator {
         LogUtils.println("源代码项目目录：" + PROJECT_PATH);
         LogUtils.println("软件名称：" + args[1]);
         LogUtils.println("版本号：" + args[2]);
-        LogUtils.print("源代码文件类型：" );
+        LogUtils.print("源代码文件类型：");
         FILE_TYPES.stream().forEach(LogUtils::print);
         LogUtils.println("");
-        LogUtils.println("写入方式：" + (IS_HALF?"前后各30页":"顺序60页"));
-        LogUtils.print("扫描忽略目录：" );
+        LogUtils.println("写入方式：" + (IS_HALF ? "前后各30页" : "顺序60页"));
+        LogUtils.print("扫描忽略目录：");
         IGNORE_DIRS.stream().forEach(LogUtils::print);
         LogUtils.println("");
         generateSourceCodeDocx(PROJECT_PATH);
@@ -76,30 +78,33 @@ public class CodeDocxGenerator {
 
     /**
      * 生成源代码Word文档
+     *
      * @param projectPath 源代码目录
      */
-    private void generateSourceCodeDocx(String projectPath){
+    private void generateSourceCodeDocx(String projectPath) {
         //扫描项目中符合要求的文件
         LogUtils.println("开始扫描文件");
-        List<String> files = FileUtils.scanFiles(projectPath, FILE_TYPES,IGNORE_DIRS);
+        List<String> files = FileUtils.scanFiles(projectPath, FILE_TYPES, IGNORE_DIRS);
         LogUtils.println("扫描文件完成");
         LogUtils.println("文件总数：" + files.size());
-        if(files.size() <= 0){
+        if (files.size() <= 0) {
             MsgHintUtil.showHint("未扫描到符合要求的文件");
-            return ;
+            return;
         }
         // 创建一个Word：存放源代码
         XWPFDocument doc = new XWPFDocument();
+        // 设置A4文档大小
+        WordDocUtils.setPageSize(doc, 11907, 16840);
         // 设置Word的页边距：保证每页不少于50行代码，且尽量保证每行代码不换行
-        setPageMargin(doc,PAGE_MARGIN_VERTICAL,PAGE_MARGIN_HORIZONTAL);
+        setPageMargin(doc, PAGE_MARGIN_VERTICAL, PAGE_MARGIN_HORIZONTAL);
         // 迭代代码文件将源代码写入Word中
         LogUtils.println("开始写入Word文档");
-        if(IS_HALF){// 按前后各30页写入源码文档中
+        if (IS_HALF) {// 按前后各30页写入源码文档中
             // 先读取前30页
             files.forEach(f ->
                     {
-                        if(totalLines < MAX_LINES/2){// 行数达到要求则不再写入
-                            writeFileToDocx(f,doc);
+                        if (totalLines < MAX_LINES / 2) {// 行数达到要求则不再写入
+                            writeFileToDocx(f, doc);
                         }
                     }
             );
@@ -107,16 +112,16 @@ public class CodeDocxGenerator {
             Collections.reverse(files);
             files.forEach(f ->
                     {
-                        if(totalLines < MAX_LINES){// 行数达到要求则不再写入
-                            writeFileToDocx(f,doc);
+                        if (totalLines < MAX_LINES) {// 行数达到要求则不再写入
+                            writeFileToDocx(f, doc);
                         }
                     }
             );
-        }else{ // 从开始写入60页
+        } else { // 从开始写入60页
             files.forEach(f ->
                     {
-                        if(totalLines < MAX_LINES){// 行数达到要求则不再写入
-                            writeFileToDocx(f,doc);
+                        if (totalLines < MAX_LINES) {// 行数达到要求则不再写入
+                            writeFileToDocx(f, doc);
                         }
                     }
             );
@@ -124,7 +129,7 @@ public class CodeDocxGenerator {
         LogUtils.println("写入Word文档完成");
         LogUtils.println("Word文档输出目录：" + DOC_SAVE_PATH);
         // 保存Word文档
-        saveDocx(doc,DOC_SAVE_PATH);
+        saveDocx(doc, DOC_SAVE_PATH);
         LogUtils.println("统计代码行数：" + totalLines);
         // Word添加页眉：显示软件名称、版本号和页码
         createPageHeader(HEADER);
@@ -133,9 +138,10 @@ public class CodeDocxGenerator {
 
     /**
      * 创建页码：通过在页眉中插入Word中代表页码的域代码{PAGE  \* MERGEFORMAT}来显示页码
+     *
      * @param paragraph 段落
      */
-    private void createPageNum(XWPFParagraph paragraph){
+    private void createPageNum(XWPFParagraph paragraph) {
         // Word中域代码的语法是 {域名称 指令 可选开关} ，其中大括号不能直接写，只能通过代码来生成或表示
         // 下面三个步骤就是创建左大括号{、域代码内容、右大括号}
         // 创建左大括号{
@@ -156,18 +162,19 @@ public class CodeDocxGenerator {
 
     /**
      * Word添加页眉
+     *
      * @param header 页眉内容
      */
-    private void createPageHeader(String header){
+    private void createPageHeader(String header) {
         try {
             // 以已存在的Word文件创建文档对象
             XWPFDocument doc = new XWPFDocument(new FileInputStream(new File(DOC_SAVE_PATH)));
 
             //生成偶数页的页眉
-            createPageHeader(doc,HeaderFooterType.EVEN,header);
+            createPageHeader(doc, HeaderFooterType.EVEN, header);
 
             //生成奇数页的页眉
-            createPageHeader(doc,HeaderFooterType.DEFAULT,header);
+            createPageHeader(doc, HeaderFooterType.DEFAULT, header);
 
             // 反射添加页眉
             Field filedSet = XWPFDocument.class.getDeclaredField("settings");
@@ -182,12 +189,12 @@ public class CodeDocxGenerator {
             // 获取文档页数
 //            int pageNums = doc.getProperties().getExtendedProperties()
 //                    .getUnderlyingProperties().getPages();// 计算结果有问题
-            int pageNums = totalLines/PAGE_LINES + 1;// 根据统计的代码行数计算总页数
+            int pageNums = totalLines / PAGE_LINES + 1;// 根据统计的代码行数计算总页数
             // 保存文档
             doc.write(new FileOutputStream(DOC_SAVE_PATH));
             doc.close();
-            MsgHintUtil.showFinishHint(DOC_SAVE_PATH,pageNums,totalLines);
-        }catch (Exception e){
+            MsgHintUtil.showFinishHint(DOC_SAVE_PATH, pageNums, totalLines);
+        } catch (Exception e) {
             LogUtils.error("Word添加页眉出错：" + e.getMessage());
         }
     }
@@ -195,13 +202,14 @@ public class CodeDocxGenerator {
     /**
      * 创建页眉，页眉内容包含软件名称、版本号和页码。
      * <br/>其中软件名称和版本号合并居左，页码居右
+     *
      * @param doc
-     * @param type 页眉类型：决定创建的是奇数页页眉还是偶数页页眉
+     * @param type   页眉类型：决定创建的是奇数页页眉还是偶数页页眉
      * @param header 页眉显示的文本内容
      */
-    private void createPageHeader(XWPFDocument doc, HeaderFooterType type, String header){
+    private void createPageHeader(XWPFDocument doc, HeaderFooterType type, String header) {
         // 创建页眉段落
-        XWPFParagraph  paragraph = doc.createHeader(type).createParagraph();
+        XWPFParagraph paragraph = doc.createHeader(type).createParagraph();
         paragraph.setAlignment(ParagraphAlignment.LEFT);// 页眉内容左对齐
         paragraph.setVerticalAlignment(TextAlignment.CENTER);// 页眉内容垂直居中
 //        paragraph.setBorderTop(Borders.THICK);
@@ -209,7 +217,7 @@ public class CodeDocxGenerator {
         // 创建tab，用于定位页码，让页码居右显示
         CTTabStop tabStop = paragraph.getCTP().getPPr().addNewTabs().addNewTab();
         tabStop.setVal(STTabJc.RIGHT);
-        int twipsPerInch =  720;
+        int twipsPerInch = 720;
         tabStop.setPos(BigInteger.valueOf(15 * twipsPerInch));
 
         // 创建显示header的XWPFRun，XWPFRun代表一个文本显示区域
@@ -221,11 +229,12 @@ public class CodeDocxGenerator {
 
     /**
      * 设置Word的页边距：上下边距控制每页至少显示50行，左右边距控制每行代码尽量不会自动换行
+     *
      * @param doc
-     * @param marginVertical 上下边距
+     * @param marginVertical   上下边距
      * @param marginHorizontal 左右边距
      */
-    private void setPageMargin(XWPFDocument doc,long marginVertical,long marginHorizontal){
+    private void setPageMargin(XWPFDocument doc, long marginVertical, long marginHorizontal) {
         CTSectPr sectPr = doc.getDocument().getBody().addNewSectPr();
         CTPageMar pageMar = sectPr.addNewPgMar();
         pageMar.setTop(BigInteger.valueOf(marginVertical));
@@ -236,9 +245,10 @@ public class CodeDocxGenerator {
 
     /**
      * 单个源码文件写入Word
+     *
      * @param filePath 源码文件路径
      */
-    private void writeFileToDocx(String filePath, XWPFDocument doc){
+    private void writeFileToDocx(String filePath, XWPFDocument doc) {
         LogUtils.println(filePath);
         // 写入文件标题
         XWPFParagraph titleP = doc.createParagraph();// 新建文件标题段落
@@ -252,16 +262,16 @@ public class CodeDocxGenerator {
         paragraph.setAlignment(ParagraphAlignment.LEFT);
         paragraph.setSpacingLineRule(LineSpacingRule.EXACT);
 
-        XWPFRun run ;
+        XWPFRun run;
         List<String> lines = FileUtils.readFile(filePath);
-        for(int i = 0;i < lines.size();i++){// 将代码一行行写入Word中
+        for (int i = 0; i < lines.size(); i++) {// 将代码一行行写入Word中
             run = paragraph.createRun();// 创建段落文本
             run.setText(lines.get(i));// 设置段落文本
-            if(i < lines.size() - 1){// 最后一行不用换行：防止两个源码文件间出现空行
+            if (i < lines.size() - 1) {// 最后一行不用换行：防止两个源码文件间出现空行
                 run.addBreak();// 设置换行
             }
             totalLines++;// 代码行计数
-            if(lines.get(i).length() > 125){// 当一行代码的长度超过125时，应该会发生换行，一行代码在Word中可能会变成两行甚至更多行
+            if (lines.get(i).length() > 125) {// 当一行代码的长度超过125时，应该会发生换行，一行代码在Word中可能会变成两行甚至更多行
                 totalLines++;// 代码自动换行计数
             }
         }
@@ -269,9 +279,10 @@ public class CodeDocxGenerator {
 
     /**
      * Word保存到本地
+     *
      * @param doc
      */
-    public void saveDocx(XWPFDocument doc, String savePath){
+    public void saveDocx(XWPFDocument doc, String savePath) {
         // 创建文件输出流：保存Word到本地
         try {
             FileOutputStream fout = new FileOutputStream(savePath);
